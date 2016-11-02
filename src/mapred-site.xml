@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+                    <property>
+                         <name>mapreduce.framework.name</name>
+                         <value>yarn</value>
+                    </property>
+                    <property>
+				        <name>mapred.remote.os</name>
+				        <value>Linux</value>
+				    </property>
+				      <property>
+				        <name>mapreduce.app-submission.cross-platform</name>
+				        <value>true</value>
+				    </property>
+				     <property>
+					    <name>mapreduce.application.classpath</name>
+					    <value>
+					        /usr/local/java/hadoop/hadoop-2.6.0/etc/hadoop,
+					        /usr/local/java/hadoop/hadoop-2.6.0/share/hadoop/common/*,
+					        /usr/local/java/hadoop/hadoop-2.6.0/share/hadoop/common/lib/*,
+					        /usr/local/java/hadoop/hadoop-2.6.0/share/hadoop/hdfs/*,
+					        /usr/local/java/hadoop/hadoop-2.6.0/share/hadoop/hdfs/lib/*,
+					        /usr/local/java/hadoop/hadoop-2.6.0/share/hadoop/mapreduce/*,
+					        /usr/local/java/hadoop/hadoop-2.6.0/share/hadoop/mapreduce/lib/*,
+					        /usr/local/java/hadoop/hadoop-2.6.0/share/hadoop/yarn/*,
+					        /usr/local/java/hadoop/hadoop-2.6.0/share/hadoop/yarn/lib/*
+					    </value>
+					</property>    
+					
+                    <property>
+                         <name>mapreduce.jobtracker.http.address</name>
+                         <value>master:10030</value>
+                   </property>
+                    <property>
+                         <name>mapreduce.jobhistory.address</name>
+                         <value>master:10020</value>
+                    </property>
+                    <property>
+                         <name>mapreduce.jobhistory.webapp.address</name>
+                         <value>master:19888</value>
+                     </property>
+                        <property>
+                                 <name>mapred.job.tracker</name>
+                                 <value>http://master:9001</value>
+                         </property>
+</configuration>
