@@ -1,5 +1,23 @@
 package hello;
- 
+
+/**
+ *xxx:1      
+			==>	xxx:<1,1> 
+ *xxx:1
+ *
+ *
+ *
+ *xxx:1
+ *xxx:1	==> xxx:<1,1,1>   ===>    xxx:<<1,1>,<1,1,1>,<1,1>>
+ *xxx:1
+ *
+ *
+ *
+ *xxx:1
+ *		==>	xxx:<1,1>
+ *xxx:1
+ *
+ */
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.StringTokenizer;
@@ -33,61 +51,64 @@ import org.apache.hadoop.util.GenericOptionsParser;
 public class Hello {
  
 		//前两个类型是map的参数类型，后两个类型是context.write的参数类型
-	  public static class MyMapper  extends Mapper<Object, Text, Text, IntWritable>{
+	  public static class MyMapper  extends Mapper<Object, Text, Text, DoubleWritable>{
 		  		//参数value表示一行?这样虽然是排序但是去重了
 		  		public static IntWritable int_one=new IntWritable(1);
 			    public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-				     	context.write(value, int_one);
+			    		StringTokenizer tokenizer = new StringTokenizer(value.toString());
+			    		String name=tokenizer.nextToken();
+			    		double score=Double.parseDouble(tokenizer.nextToken());
+			    		context.write(new Text(name), new DoubleWritable(score));
 			    }
 	  }
 	  
-	  /**
-	   *xxx:1      
-				==>	xxx:<1,1> 
-	   *xxx:1
-	   *
-	   *
-	   *
-	   *xxx:1
-	   *xxx:1	==> xxx:<1,1,1>   ===>    xxx:<<1,1>,<1,1,1>,<1,1>>
-	   *xxx:1
-	   *
-	   *
-	   *
-	   *xxx:1
-	   *		==>	xxx:<1,1>
-	   *xxx:1
-	   *
-	   */
 	  
-	  public static class MyCombiner  extends Reducer<Text,IntWritable,Text,IntWritable> {
+	  public static class MyCombiner  extends Reducer<Text,DoubleWritable,Text,DoubleWritable> {
 	  		@Override
-	  		protected void reduce(Text key, Iterable<IntWritable> values,Reducer<Text, IntWritable, Text, IntWritable>.Context context) throws IOException, InterruptedException {
+	  		protected void reduce(Text key, Iterable<DoubleWritable> values,Reducer<Text, DoubleWritable, Text, DoubleWritable>.Context context) throws IOException, InterruptedException {
+	  				  double sum=0;
 	  				  int count=0;
-	  				  for (IntWritable intWritable : values) {
-	  					  count+=intWritable.get();
+	  				  for (DoubleWritable doubleWritable : values) {
+	  					  sum+=doubleWritable.get();
+	  					  count++;
 					  }
-	  				  context.write(key, new IntWritable(count));
+	  				  double avgScore=sum/count;
+	  				  context.write(key, new DoubleWritable(avgScore));
 		  	}
 }
 	  //map ---> combiner --->reduce(注意：Output types of a combiner must == output types of a mapper. )
 	  	
 	  //前两个类型是reduce的前两个参数类型,后两个类型是context.write的参数类型
-	  public static class MyReducer  extends Reducer<Text,IntWritable,Text,Text> {
+	  public static class MyReducer  extends Reducer<Text,DoubleWritable,Text,DoubleWritable> {
 		  		public static Text emptyText=new Text();
 		  		@Override
-		  		protected void reduce(Text key, Iterable<IntWritable> values,Reducer<Text, IntWritable, Text, Text>.Context context) throws IOException, InterruptedException {
+		  		protected void reduce(Text key, Iterable<DoubleWritable> values,Reducer<Text, DoubleWritable, Text, DoubleWritable>.Context context) throws IOException, InterruptedException {
+		  				  double sum=0;
 		  				  int count=0;
-		  				  for (IntWritable intWritable : values) {
-		  					  count+=intWritable.get();
+		  				  for (DoubleWritable doubleWritable : values) {
+			  					  count++;
+			  					  sum+=doubleWritable.get();
 						  }
-		  				  for(int i=0;i<count;i++){
-		  					  context.write(key, emptyText);
-		  				  }
+		  				  double avgScore=sum/count;
+		  				  context.write(key, new DoubleWritable(avgScore));
 			  	}
 	  }
 	 
 	  public static void main(String[] xx)  {
+		  
+		  		
+		  
+		  		boolean isTest=false;
+		  		if(isTest){
+		  			//测试代码
+		  			StringTokenizer tokenizer = new StringTokenizer("张三 46");
+		  			String name=tokenizer.nextToken();
+		    		double score=Double.parseDouble(tokenizer.nextToken());
+		  			System.out.println("name="+name+",score="+score);
+		  			return;
+		  		}
+		  
+		  
 			  try{
 				    Job job = new Job(new Configuration(), "win7中eclipse中word count_4(测试检测海量文章中每个单词的数量耗时！)");
 				    
@@ -98,10 +119,10 @@ public class Hello {
 				    job.setReducerClass(MyReducer.class);
 				    
 				    job.setMapOutputKeyClass(Text.class);
-				    job.setMapOutputValueClass(IntWritable.class);
+				    job.setMapOutputValueClass(DoubleWritable.class);
 				    
 				    job.setOutputKeyClass(Text.class);
-				    job.setOutputValueClass(Text.class);
+				    job.setOutputValueClass(DoubleWritable.class);
 				    
 				    /*注意combiner的输入和输出要和map一致，所以job.setMapOutputValueClass就相当于设置了map和combiner，
 				  	 * 而job.setOutputValueClass是设置reduce的输出(如果没有上面的话相当于设置了map,combiner,reduce他们三个)*/
