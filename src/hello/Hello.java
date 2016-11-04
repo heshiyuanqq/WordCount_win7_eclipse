@@ -21,32 +21,24 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
- /**
-  * Type mismatch in value from map: 
-  * expected org.apache.hadoop.io.IntWritable, 
-  * received org.apache.hadoop.io.Text
 
-  * @author Administrator
-  *
-  */
-
-//1.统计单词个数(某某单词：个数)
-//2.统计单词个数(某某单词：....几个就几个点儿)
+//1.统计单词个数(某某单词：个数)√
+//2.统计单词个数(某某单词：....几个就几个点儿)√
+//3.数据去重√
+//4.成绩排名(字典排序√，大数字小排序)
+//5.求平均值
+//6.单表关联
+//7.多表关联
+//8.倒排索引
 public class Hello {
  
 		//前两个类型是map的参数类型，后两个类型是context.write的参数类型
-	  public static class TokenizerMapper  extends Mapper<Object, Text, Text, IntWritable>{
+	  public static class MyMapper  extends Mapper<Object, Text, Text, IntWritable>{
+		  		//参数value表示一行?这样虽然是排序但是去重了
+		  		public static IntWritable int_one=new IntWritable(1);
 			    public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-				      StringTokenizer itr = new StringTokenizer(value.toString());
-				      Text text1 = new Text();
-				      while (itr.hasMoreTokens()) {
-					        text1.set(itr.nextToken());
-					        context.write(text1, new IntWritable(1));
-					        //这里写出去的每个市这样的：xxx:1
-				      }
+				     	context.write(value, int_one);
 			    }
-			
-			  
 	  }
 	  
 	  /**
@@ -67,63 +59,52 @@ public class Hello {
 	   *xxx:1
 	   *
 	   */
- 
+	  
+	  public static class MyCombiner  extends Reducer<Text,IntWritable,Text,IntWritable> {
+	  		@Override
+	  		protected void reduce(Text key, Iterable<IntWritable> values,Reducer<Text, IntWritable, Text, IntWritable>.Context context) throws IOException, InterruptedException {
+	  				  int count=0;
+	  				  for (IntWritable intWritable : values) {
+	  					  count+=intWritable.get();
+					  }
+	  				  context.write(key, new IntWritable(count));
+		  	}
+}
+	  //map ---> combiner --->reduce(注意：Output types of a combiner must == output types of a mapper. )
+	  	
 	  //前两个类型是reduce的前两个参数类型,后两个类型是context.write的参数类型
-	  public static class IntSumReducer  extends Reducer<Text,IntWritable,Text,IntWritable> {
+	  public static class MyReducer  extends Reducer<Text,IntWritable,Text,Text> {
+		  		public static Text emptyText=new Text();
 		  		@Override
-		  		protected void reduce(Text key, Iterable<IntWritable> values,Reducer<Text, IntWritable, Text, IntWritable>.Context context) throws IOException, InterruptedException {
-		  			//这里接收的key:values
-		  			/**
-		  			 * xxx:<>
-		  			 */
-		  				  IntWritable intWritable = new IntWritable(0);
-		  				  int sum=0;
-					      for (IntWritable val : values) {
-					    	  	intWritable.set(intWritable.get()+val.get());
-					      }
-					      context.write(key, intWritable);//会出现这样的问题"4	***(星级)*(星级)(星级)",知道为什么吗？因为是分布分工合作的，可能同样的key在很多机器的很多xiancheng进程任务中都有，最后被写到了一起
+		  		protected void reduce(Text key, Iterable<IntWritable> values,Reducer<Text, IntWritable, Text, Text>.Context context) throws IOException, InterruptedException {
+		  				  int count=0;
+		  				  for (IntWritable intWritable : values) {
+		  					  count+=intWritable.get();
+						  }
+		  				  for(int i=0;i<count;i++){
+		  					  context.write(key, emptyText);
+		  				  }
 			  	}
 	  }
 	 
 	  public static void main(String[] xx)  {
 			  try{
-				    System.setProperty("hadoop.home.dir", "D:\\install\\hadoop-2.6.0\\hadoop-2.6.0");
 				    Job job = new Job(new Configuration(), "win7中eclipse中word count_4(测试检测海量文章中每个单词的数量耗时！)");
 				    
 				    job.setJarByClass(Hello.class);
 				    
-				    job.setMapperClass(TokenizerMapper.class);
+				    job.setMapperClass(MyMapper.class);
+				    job.setCombinerClass(MyCombiner.class);
+				    job.setReducerClass(MyReducer.class);
 				    
-				    job.setCombinerClass(IntSumReducer.class);
-				    job.setReducerClass(IntSumReducer.class);
+				    job.setMapOutputKeyClass(Text.class);
+				    job.setMapOutputValueClass(IntWritable.class);
 				    
+				    job.setOutputKeyClass(Text.class);
+				    job.setOutputValueClass(Text.class);
 				    
-				    job.setOutputKeyClass(Text.class);//reduce第一个参数类型(要和map中的context.write的第一个参数类型一致)
-				    job.setOutputValueClass(IntWritable.class);//reduce第二个参数类型(要和map中的context.write的第二个参数类型一致)
-				    
-				    
-				    
-				 /* 这样设置：  job.setOutputKeyClass(Text.class);
-				    job.setOutputValueClass(IntWritable.class);
-				    
-				    报错：Type mismatch in value from map: 
-					  * expected org.apache.hadoop.io.IntWritable, 
-					  * received org.apache.hadoop.io.Text
-				    */
-				    
-				    
-				    
-				    /**不设置：
-				     *报错：Type mismatch in key from map:
-				     *   expected org.apache.hadoop.io.LongWritable, 
-				     *   received org.apache.hadoop.io.Text
-
-				     */
-				    /**
-				     * 
-				     */
-				    
-				  
+				    /*注意combiner的输入和输出要和map一致，所以job.setMapOutputValueClass就相当于设置了map和combiner，
+				  	 * 而job.setOutputValueClass是设置reduce的输出(如果没有上面的话相当于设置了map,combiner,reduce他们三个)*/
 				    FileInputFormat.addInputPath(job, new Path("input"));
 				    FileOutputFormat.setOutputPath(job, new Path("output"));
 				    
