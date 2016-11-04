@@ -1,8 +1,8 @@
-package hello;
+package danbiaoguanlian;
 
 /**
  *xxx:1      
-			==>	xxx:<1,1> 
+	     ==>	xxx:<1,1> 
  *xxx:1
  *
  *
@@ -53,7 +53,7 @@ import org.apache.hadoop.util.GenericOptionsParser;
 //6.单表关联(给出child-parent（孩子——父母）表，要求输出grandchild-grandparent（孙子——爷奶）表。)
 //7.多表关联
 //8.倒排索引
-public class Hello {
+public class Danbiaoguanlian {
  
 		//前两个类型是map的参数类型，后两个类型是context.write的参数类型
 	  public static class MyMapper  extends Mapper<Object, Text, Text, Text>{
@@ -139,7 +139,7 @@ public class Hello {
 			  try{
 				    Job job = new Job(new Configuration(), "win7中eclipse中word count_4(测试检测海量文章中每个单词的数量耗时！)");
 				    
-				    job.setJarByClass(Hello.class);
+				    job.setJarByClass(Danbiaoguanlian.class);
 				    
 				    job.setMapperClass(MyMapper.class);
 				    job.setCombinerClass(MyCombiner.class);
